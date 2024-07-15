@@ -15,6 +15,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.pravera.flutter_foreground_task.models.*
 import com.pravera.flutter_foreground_task.utils.ForegroundServiceUtils
+import com.pravera.flutter_foreground_task.ActivityAwareListener
 import io.flutter.FlutterInjector
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.dart.DartExecutor
@@ -32,7 +33,7 @@ import kotlin.system.exitProcess
  * @author Dev-hwang
  * @version 1.0
  */
-class ForegroundService : Service(), MethodChannel.MethodCallHandler {
+class ForegroundService : Service(), MethodChannel.MethodCallHandler, ActivityAwareListener.Listener {
 	companion object {
         private val TAG = ForegroundService::class.java.simpleName
         private const val ACTION_TASK_START = "onStart"
@@ -74,11 +75,16 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 		}
 	}
 
+	override fun onDetachedFromActivity() {
+		Log.d(TAG, "onDetachedFromActivity")
+		executeDartCallback(foregroundTaskOptions.callbackHandle)
+	}
+
 	override fun onCreate() {
 		super.onCreate()
 		fetchDataFromPreferences()
 		registerBroadcastReceiver()
-
+		ActivityAwareListener.listener = this
 		when (foregroundServiceStatus.action) {
 			ForegroundServiceAction.START -> {
 				startForegroundService()
@@ -150,6 +156,7 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 				}
 			}
 		}
+		ActivityAwareListener.listener = null
 	}
 
 	override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
